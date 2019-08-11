@@ -9,7 +9,13 @@
         {
             SourceFamily = sourceFamily;
             DestinationFamily = destinationFamily;
+            CategoryId = sourceFamily.CategoryId;
         }
+
+        /// <summary>
+        /// Идентификатор категории семейств
+        /// </summary>
+        public int CategoryId { get; }
 
         /// <summary>
         /// Семейство - источник (дубликат)
@@ -19,6 +25,6 @@
         /// <summary>
         /// Семейство назначения
         /// </summary>
-        public ExtFamily DestinationFamily { get; }
+        public ExtFamily DestinationFamily { get; set; }
     }
 }

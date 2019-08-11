@@ -6,54 +6,78 @@
              xmlns:viewModels="clr-namespace:mprFamilyDuplicateFixer.ViewModel"
              xmlns:mps="https://modplus.org/winfx/xaml/controls"
              xmlns:model="clr-namespace:mprFamilyDuplicateFixer.Model"
-             mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800"
-             d:DataContext="{d:DesignInstance viewModels:MainViewModel, IsDesignTimeCreatable=False}">
+             mc:Ignorable="d" MinWidth="400" MinHeight="400"
+             d:DesignHeight="400" d:DesignWidth="400"
+             d:DataContext="{d:DesignInstance viewModels:MainViewModel, IsDesignTimeCreatable=False}"
+             ResizeMode="CanResizeWithGrip">
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="pack://application:,,,/ModPlusStyle;component/Styles/Controls.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <XmlDataProvider x:Key="Lang" Source="E:/ModPlus/Languages/en-US.xml" XPath="ModPlus/mprFamilyDuplicateFixer"></XmlDataProvider>
             <HierarchicalDataTemplate DataType="{x:Type model:ExtCategory}"
                                       ItemsSource="{Binding Path=FamilyPairs}">
-                <CheckBox Content="{Binding Path=Name}" Margin="0"></CheckBox>
+                <CheckBox Margin="0" IsThreeState="True"
+                          IsChecked="{Binding Path=Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                    <TextBlock Text="{Binding Path=Name}"></TextBlock>
+                </CheckBox>
                 <HierarchicalDataTemplate.ItemTemplate>
                     <DataTemplate DataType="{x:Type model:ExtFamilyPair}">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto" SharedSizeGroup="SourceFamily"/>
-                                <ColumnDefinition Width="20"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto" SharedSizeGroup="DestinationFamily"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
+
+                            <!-- source -->
                             <CheckBox Grid.Row="0" Grid.Column="0" Margin="0"
-                                      VerticalContentAlignment="Center"
-                                      Content="{Binding Path=SourceFamily.Name}"></CheckBox>
+                                      VerticalContentAlignment="Center" IsThreeState="True"
+                                      IsChecked="{Binding Path=SourceFamily.Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                <TextBlock Text="{Binding Path=SourceFamily.Name}"></TextBlock>
+                            </CheckBox>
                             <ListView Grid.Row="1" Grid.Column="0" Background="Transparent"
                                       BorderThickness="0" Margin="16 0 0 0" 
                                       mps:RippleAssist.IsDisabled="True"
                                       ItemsSource="{Binding Path=SourceFamily.FamilySymbols}">
                                 <ListView.ItemTemplate>
                                     <DataTemplate DataType="{x:Type model:ExtFamilySymbol}">
-                                        <CheckBox Content="{Binding Path=Name}" Margin="0"></CheckBox>
+                                        <CheckBox Margin="0"
+                                                  IsChecked="{Binding Path=Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                            <TextBlock Text="{Binding Path=Name}"></TextBlock>
+                                        </CheckBox>
                                     </DataTemplate>
                                 </ListView.ItemTemplate>
                             </ListView>
+
+                            <!-- arrow -->
+                            <Viewbox Grid.Row="0" Grid.Column="1" Width="24" Height="24"
+                                     Margin="{DynamicResource ModPlusDefaultMargin}"
+                                     ToolTip="{Binding Source={StaticResource Lang}, XPath=t1}">
+                                <Canvas Width="24" Height="24">
+                                    <Path Data="M8.59,16.58L13.17,12L8.59,7.41L10,6L16,12L10,18L8.59,16.58Z"
+                                          Fill="{DynamicResource AccentColorBrush}" />
+                                </Canvas>
+                            </Viewbox>
+
+                            <!-- destination -->
                             <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
                                        Text="{Binding Path=DestinationFamily.Name}"></TextBlock>
-                            <ListView Grid.Row="1" Grid.Column="2" Background="Transparent"
-                                      mps:RippleAssist.IsDisabled="True"
-                                      BorderThickness="0" Margin="0"
+                            <ItemsControl Grid.Row="1" Grid.Column="2" Background="Transparent"
+                                      BorderThickness="0" Margin="16 0 0 0"
                                       ItemsSource="{Binding Path=DestinationFamily.FamilySymbols}">
-                                <ListView.ItemTemplate>
+                                <ItemsControl.ItemTemplate>
                                     <DataTemplate DataType="{x:Type model:ExtFamilySymbol}">
-                                        <TextBlock Text="{Binding Path=Name}"></TextBlock>
+                                        <TextBlock Text="{Binding Path=Name}"
+                                                   Margin="{DynamicResource ModPlusDefaultMargin}"></TextBlock>
                                     </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
                         </Grid>
                     </DataTemplate>
                 </HierarchicalDataTemplate.ItemTemplate>
@@ -61,9 +85,70 @@
         </ResourceDictionary>
     </Window.Resources>
     <Grid>
-        <TreeView ItemsSource="{Binding Path=FamiliesByCategories}"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TreeView Grid.Row="0" ItemsSource="{Binding Path=FamiliesByCategories}"
                   mps:RippleAssist.IsDisabled="True"
-                  Grid.IsSharedSizeScope="True">
+                  Grid.IsSharedSizeScope="True"
+                  IsEnabled="{Binding Path=IsEnableControls}">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource ModPlusTreeViewItem}">
+                    <Setter Property="IsExpanded" Value="True"/>
+                </Style>
+            </TreeView.ItemContainerStyle>
         </TreeView>
+        <!-- add new family pair -->
+        <Button Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Style="{DynamicResource ModPlusFlatButton}" MinWidth="0" MinHeight="0"
+                Padding="4" Margin="10"
+                Command="{Binding Path=AddNewFamilyPairCommand}"
+                ToolTip="{Binding Source={StaticResource Lang}, XPath=t2}"
+                IsEnabled="{Binding Path=IsEnableControls}">
+            <Viewbox Width="24" Height="24">
+                <Canvas Width="24" Height="24">
+                    <Path Data="M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M13,7H11V11H7V13H11V17H13V13H17V11H13V7Z" 
+                          Fill="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType=Button}, Path=Foreground}" />
+                </Canvas>
+            </Viewbox>
+        </Button>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <StackPanel Orientation="Vertical" Grid.Row="0"
+                        IsEnabled="{Binding Path=IsEnableControls}">
+                <!-- Копировать недостающие типоразмеры -->
+                <CheckBox IsChecked="{Binding Path=CopyFamilySymbols, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Content="{Binding Source={StaticResource Lang}, XPath=h1}"
+                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t3}"></CheckBox>
+                <!-- Копировать значения параметров типоразмеров -->
+                <CheckBox IsChecked="{Binding Path=CopyFamilySymbolParameters, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Content="{Binding Source={StaticResource Lang}, XPath=h2}"
+                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t4}"></CheckBox>
+                <!-- Заменить типоразмер у экземпляров семейств -->
+                <CheckBox IsChecked="{Binding Path=ChangeFamilyInstancesSymbol, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          Name="ChkChangeFamilyInstancesSymbol"
+                          Content="{Binding Source={StaticResource Lang}, XPath=h3}"
+                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t5}"></CheckBox>
+                <!-- Удалить дубликаты семейств -->
+                <CheckBox IsChecked="{Binding Path=DeleteDuplicateFamilies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"
+                          Content="{Binding Source={StaticResource Lang}, XPath=h4}"
+                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t6}"></CheckBox>
+            </StackPanel>
+
+            <TextBlock Grid.Row="1" Margin="4 0" TextWrapping="Wrap"
+                       Text="{Binding Path=ProgressText}"
+                       TextAlignment="Center"></TextBlock>
+            
+            <!-- Выполнить -->
+            <Button Grid.Row="2" Content="{Binding Source={StaticResource Lang}, XPath=h5}"
+                    IsEnabled="{Binding Path=CanExecute}"
+                    Command="{Binding Path=ExecuteCommand}"></Button>
+        </Grid>
     </Grid>
 </mps:ModPlusWindow>

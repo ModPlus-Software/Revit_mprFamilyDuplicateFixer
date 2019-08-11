@@ -1,6 +1,5 @@
 ﻿namespace mprFamilyDuplicateFixer.Commands
 {
-    using System;
     using Autodesk.Revit.Attributes;
     using Autodesk.Revit.DB;
     using Autodesk.Revit.UI;
@@ -8,22 +7,22 @@
     using View;
     using ViewModel;
 
+    /// <summary>
+    /// Класс команды mprFamilyDuplicateFixer
+    /// </summary>
     [Regeneration(RegenerationOption.Manual)]
     [Transaction(TransactionMode.Manual)]
     public class FamilyDuplicateFixerCommand : IExternalCommand
     {
+        /// <inheritdoc />
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            // todo statistic
-            ////Statistic.SendCommandStarting(new ModPlusConnector());
-            
-            MainWindow mainWindow = new MainWindow();
-            MainViewModel mainViewModel = new MainViewModel(commandData.Application, mainWindow);
+            Statistic.SendCommandStarting(new ModPlusConnector());
+
+            var mainWindow = new MainWindow();
+            var mainViewModel = new MainViewModel(commandData.Application, mainWindow);
             mainWindow.DataContext = mainViewModel;
-            mainWindow.ContentRendered += delegate
-            {
-                mainViewModel.ReadFamilies();
-            };
+            mainWindow.ContentRendered += (sender, args) => mainViewModel.ReadFamilies();
             mainWindow.ShowDialog();
 
             return Result.Succeeded;

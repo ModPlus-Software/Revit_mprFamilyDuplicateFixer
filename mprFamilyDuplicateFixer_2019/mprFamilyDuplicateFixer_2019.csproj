@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E6BE7C14-3207-4FA3-A8C0-13F65DA5ECDB}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>mprFamilyDuplicateFixer</RootNamespace>
+    <AssemblyName>mprFamilyDuplicateFixer_2019</AssemblyName>
+    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;R2019</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;R2019</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ModPlusAPI">
+      <HintPath>..\..\..\..\..\..\..\ModPlus\Extensions\ModPlusAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ModPlusStyle">
+      <HintPath>..\..\..\..\..\..\..\ModPlus\Extensions\ModPlusStyle.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="RevitAPI">
+      <HintPath>C:\_Revit dlls\2019\RevitAPI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RevitAPIUI">
+      <HintPath>C:\_Revit dlls\2019\RevitAPIUI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Xml" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\commands\FamilyDuplicateFixerCommand.cs">
+      <Link>Commands\FamilyDuplicateFixerCommand.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\model\ExtCategory.cs">
+      <Link>Model\ExtCategory.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\model\ExtCategoryForSelection.cs">
+      <Link>Model\ExtCategoryForSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\model\ExtFamily.cs">
+      <Link>Model\ExtFamily.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\model\ExtFamilyForSelection.cs">
+      <Link>Model\ExtFamilyForSelection.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\model\ExtFamilyPair.cs">
+      <Link>Model\ExtFamilyPair.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\model\ExtFamilySymbol.cs">
+      <Link>Model\ExtFamilySymbol.cs</Link>
+    </Compile>
+    <Compile Include="..\mprFamilyDuplicateFixer_2015\ModPlusConnector.cs">
+      <Link>ModPlusConnector.cs</Link>
+    </Compile>
+    <Compile Include="..\mprFamilyDuplicateFixer_2015\Properties\AssemblyInfo.cs">
+      <Link>Properties\AssemblyInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\viewmodel\MainViewModel.cs">
+      <Link>ViewModel\MainViewModel.cs</Link>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\view\MainWindow.xaml.cs">
+      <Link>View\MainWindow.xaml.cs</Link>
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="..\mprfamilyduplicatefixer_2015\view\SelectFamilyPairWindow.xaml.cs">
+      <Link>View\SelectFamilyPairWindow.xaml.cs</Link>
+      <DependentUpon>SelectFamilyPairWindow.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="..\mprfamilyduplicatefixer_2015\resources\mprFamilyDuplicateFixer_16x16.png">
+      <Link>Resources\mprFamilyDuplicateFixer_16x16.png</Link>
+    </Resource>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="..\mprfamilyduplicatefixer_2015\resources\mprFamilyDuplicateFixer_32x32.png">
+      <Link>Resources\mprFamilyDuplicateFixer_32x32.png</Link>
+    </Resource>
+  </ItemGroup>
+  <ItemGroup>
+    <Page Include="..\mprfamilyduplicatefixer_2015\view\MainWindow.xaml">
+      <Link>View\MainWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="..\mprfamilyduplicatefixer_2015\view\SelectFamilyPairWindow.xaml">
+      <Link>View\SelectFamilyPairWindow.xaml</Link>
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>if $(ConfigurationName) == Release (
+"$(ModPlusPostBuild)" "Revit" "$(TargetPath)" "s"
+)</PostBuildEvent>
+  </PropertyGroup>
+</Project>
