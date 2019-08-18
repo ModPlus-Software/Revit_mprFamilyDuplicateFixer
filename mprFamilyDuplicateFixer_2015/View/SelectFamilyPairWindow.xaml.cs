@@ -28,7 +28,7 @@
             var families = new FilteredElementCollector(uiApplication.ActiveUIDocument.Document)
                 .OfClass(typeof(Family))
                 .Cast<Family>()
-                .Where(f => f.FamilyCategory != null)
+                .Where(f => f.FamilyCategory != null && !f.IsInPlace)
                 .ToList();
 
             Dictionary<int, Category> categories = families

@@ -167,7 +167,7 @@
             var families = new FilteredElementCollector(_uiApplication.ActiveUIDocument.Document)
                 .OfClass(typeof(Family))
                 .Cast<Family>()
-                .Where(f => f.FamilyCategory != null)
+                .Where(f => f.FamilyCategory != null && !f.IsInPlace)
                 .ToList();
 
             _categories = families
