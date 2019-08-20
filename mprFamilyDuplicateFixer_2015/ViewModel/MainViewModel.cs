@@ -259,7 +259,20 @@
             if (checkedFamily.Name.StartsWith(currentFamily.Name))
             {
                 if (int.TryParse(checkedFamily.Name.Remove(0, currentFamily.Name.Length), out _))
-                    return true;
+                {
+                    var currentFamilySymbolId = currentFamily.GetFamilySymbolIds().FirstOrDefault();
+                    var checkedFamilySymbolId = checkedFamily.GetFamilySymbolIds().FirstOrDefault();
+                    if (currentFamilySymbolId != null && checkedFamilySymbolId != null)
+                    {
+                        var currentFamilySymbol = (FamilySymbol)currentFamily.Document.GetElement(currentFamilySymbolId);
+                        var checkedFamilySymbol = (FamilySymbol) checkedFamily.Document.GetElement(checkedFamilySymbolId);
+                        if (currentFamilySymbol.IsSimilarType(checkedFamilySymbolId))
+                        {
+                            return new HashSet<string>(currentFamilySymbol.Parameters.Cast<Parameter>().Select(p => p.Definition.Name))
+                                .SetEquals(checkedFamilySymbol.Parameters.Cast<Parameter>().Select(p => p.Definition.Name));
+                        }
+                    }
+                }
             }
 
             return false;
@@ -304,7 +317,7 @@
 
                 if (errors.Any())
                 {
-                    ModPlusAPI.IO.String.ShowTextWithNotepad(trName, string.Join(Environment.NewLine, errors));
+                    ModPlusAPI.IO.String.ShowTextWithNotepad(string.Join(Environment.NewLine, errors), trName);
                 }
 
                 _mainWindow.Close();
@@ -497,6 +510,9 @@
                 {
                     try
                     {
+                        if (!groupedFamilyInstances.ContainsKey(extFamilyPair.SourceFamily.Name))
+                            continue;
+
                         foreach (var familyInstance in groupedFamilyInstances[extFamilyPair.SourceFamily.Name])
                         {
                             var familySymbol = extFamilyPair.DestinationFamily.FamilySymbols.FirstOrDefault(s => s.Name == familyInstance.Symbol.Name);

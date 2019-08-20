@@ -7,6 +7,7 @@
     using Autodesk.Revit.DB;
     using Autodesk.Revit.UI;
     using Model;
+    using Visibility = System.Windows.Visibility;
 
     /// <summary>
     /// Окно выбора пары семейств "Дубликат-Основное семейство"
@@ -70,11 +71,17 @@
         {
             if (e.NewValue is ExtFamilyForSelection extFamilyForSelection)
             {
-                LbDestinationFamilies.ItemsSource = extFamilyForSelection.ParentCategory.Families.Where(f => f != extFamilyForSelection).ToList();
+                var similarFamilies = extFamilyForSelection.ParentCategory.Families
+                    .Where(f => f != extFamilyForSelection && 
+                                extFamilyForSelection.IsSimilarTo(f))
+                    .ToList();
+                LbDestinationFamilies.ItemsSource = similarFamilies;
+                TbMessageAboutSearchingDuplicates.Visibility = similarFamilies.Any() ? Visibility.Collapsed : Visibility.Visible;
             }
             else
             {
                 LbDestinationFamilies.ItemsSource = null;
+                TbMessageAboutSearchingDuplicates.Visibility = Visibility.Collapsed;
             }
         }
 

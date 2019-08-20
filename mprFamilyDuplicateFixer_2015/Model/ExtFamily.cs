@@ -1,7 +1,6 @@
 ﻿namespace mprFamilyDuplicateFixer.Model
 {
     using System.Collections.ObjectModel;
-    using System.ComponentModel;
     using System.Linq;
     using Autodesk.Revit.DB;
     using ModPlusAPI.Mvvm;
@@ -80,7 +79,7 @@
         /// Типоразмеры
         /// </summary>
         public ObservableCollection<ExtFamilySymbol> FamilySymbols { get; }
-
+        
         private void FillDataFromFamily()
         {
             Name = Family.Name;
@@ -90,7 +89,7 @@
                 if (Family.Document.GetElement(familySymbolId) is FamilySymbol familySymbol)
                 {
                     var extFamilySymbol = new ExtFamilySymbol(familySymbol);
-                    extFamilySymbol.PropertyChanged += delegate(object sender, PropertyChangedEventArgs args)
+                    extFamilySymbol.PropertyChanged += (sender, args) =>
                     {
                         if (args.PropertyName == "Checked")
                             ChangeCheckedStateByFamilySymbols();

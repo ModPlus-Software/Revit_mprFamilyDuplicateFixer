@@ -5,6 +5,8 @@
 
     public class ExtFamilySymbol : VmBase
     {
+        private bool _checked;
+
         public ExtFamilySymbol(FamilySymbol familySymbol)
         {
             FamilySymbol = familySymbol;
@@ -22,15 +24,14 @@
         /// </summary>
         public string Name { get; }
 
-        private bool _checked;
-
         /// <summary>Статус выбора в окне</summary>
         public bool Checked
         {
             get => _checked;
             set
             {
-                if (Equals(value, _checked)) return;
+                if (Equals(value, _checked))
+                    return;
                 _checked = value;
                 OnPropertyChanged();
             }

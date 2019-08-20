@@ -11,6 +11,8 @@
     /// </summary>
     public class ExtCategory : VmBase
     {
+        private bool? _checked;
+
         public ExtCategory(Category category)
         {
             FamilyPairs = new ObservableCollection<ExtFamilyPair>();
@@ -33,16 +35,15 @@
         /// Семейства категории
         /// </summary>
         public ObservableCollection<ExtFamilyPair> FamilyPairs { get; }
-
-        private bool? _checked;
-
+        
         /// <summary>Статус выбора в окне</summary>
         public bool? Checked
         {
             get => _checked;
             set
             {
-                if (Equals(value, _checked)) return;
+                if (Equals(value, _checked)) 
+                    return;
                 _checked = value;
                 if (value == null && FamilyPairs.All(s => s.SourceFamily.Checked != null && s.SourceFamily.Checked.Value))
                     value = false;
@@ -58,7 +59,7 @@
         /// <param name="extFamilyPair"></param>
         public void AddFamilyPair(ExtFamilyPair extFamilyPair)
         {
-            extFamilyPair.SourceFamily.PropertyChanged += delegate(object sender, PropertyChangedEventArgs args)
+            extFamilyPair.SourceFamily.PropertyChanged += (sender, args) =>
             {
                 if (args.PropertyName == "Checked")
                     ChangeCheckedStateByFamilies();
@@ -72,7 +73,8 @@
                 Checked = true;
             else if (FamilyPairs.All(f => f.SourceFamily.Checked != null && !f.SourceFamily.Checked.Value))
                 Checked = false;
-            else Checked = null;
+            else 
+                Checked = null;
         }
 
         private void ChangeCheckedStateForFamilies(bool checkedState)
