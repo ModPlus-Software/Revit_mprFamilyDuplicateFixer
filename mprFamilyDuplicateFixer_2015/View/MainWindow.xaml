@@ -134,6 +134,11 @@
                           Name="ChkChangeFamilyInstancesSymbol"
                           Content="{Binding Source={StaticResource Lang}, XPath=h3}"
                           ToolTip="{Binding Source={StaticResource Lang}, XPath=t5}"></CheckBox>
+                <!-- Копировать значения параметров заменяемого экземпляра семейства -->
+                <CheckBox IsChecked="{Binding Path=CopyFamilyInstanceParameters, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                          IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"
+                          Content="{Binding Source={StaticResource Lang}, XPath=h11}"
+                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t7}"></CheckBox>
                 <!-- Удалить дубликаты семейств -->
                 <CheckBox IsChecked="{Binding Path=DeleteDuplicateFamilies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                           IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"

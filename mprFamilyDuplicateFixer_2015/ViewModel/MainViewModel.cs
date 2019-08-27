@@ -28,6 +28,7 @@
         private bool _changeFamilyInstancesSymbol;
         private bool _copyFamilySymbolParameters;
         private bool _copyFamilySymbols;
+        private bool _copyFamilyInstanceParameters;
         private bool _deleteDuplicateFamilies;
         private bool _isEnableControls = true;
         private string _progressText;
@@ -50,6 +51,8 @@
                 CopyFamilySymbolParameters = b;
             if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(ChangeFamilyInstancesSymbol)), out b))
                 ChangeFamilyInstancesSymbol = b;
+            if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(CopyFamilyInstanceParameters)), out b))
+                CopyFamilyInstanceParameters = b;
             if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(DeleteDuplicateFamilies)), out b))
                 DeleteDuplicateFamilies = b;
         }
@@ -125,8 +128,24 @@
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(CanExecute));
                 if (!value)
+                {
                     DeleteDuplicateFamilies = false;
+                    CopyFamilyInstanceParameters = false;
+                }
                 UserConfigFile.SetValue(_langItem, nameof(ChangeFamilyInstancesSymbol), value.ToString(), true);
+            }
+        }
+
+        /// <summary>Копировать параметры экземпляра</summary>
+        public bool CopyFamilyInstanceParameters
+        {
+            get => _copyFamilyInstanceParameters;
+            set
+            {
+                if (Equals(value, _copyFamilyInstanceParameters)) return;
+                _copyFamilyInstanceParameters = value;
+                OnPropertyChanged();
+                UserConfigFile.SetValue(_langItem, nameof(CopyFamilyInstanceParameters), value.ToString(), true);
             }
         }
 
@@ -265,7 +284,7 @@
                     if (currentFamilySymbolId != null && checkedFamilySymbolId != null)
                     {
                         var currentFamilySymbol = (FamilySymbol)currentFamily.Document.GetElement(currentFamilySymbolId);
-                        var checkedFamilySymbol = (FamilySymbol) checkedFamily.Document.GetElement(checkedFamilySymbolId);
+                        var checkedFamilySymbol = (FamilySymbol)checkedFamily.Document.GetElement(checkedFamilySymbolId);
                         if (currentFamilySymbol.IsSimilarType(checkedFamilySymbolId))
                         {
                             return new HashSet<string>(currentFamilySymbol.Parameters.Cast<Parameter>().Select(p => p.Definition.Name))
@@ -328,7 +347,7 @@
             }
         }
 
-        private List<string> CopySymbols()
+        private IEnumerable<string> CopySymbols()
         {
             var errors = new List<string>();
             var doc = _uiApplication.ActiveUIDocument.Document;
@@ -406,7 +425,7 @@
             return errors;
         }
 
-        private List<string> CopySymbolsParameters()
+        private IEnumerable<string> CopySymbolsParameters()
         {
             var errors = new List<string>();
             var doc = _uiApplication.ActiveUIDocument.Document;
@@ -447,21 +466,7 @@
 
                                             if (destParameter != null)
                                             {
-                                                switch (sourceParameter.StorageType)
-                                                {
-                                                    case StorageType.Double:
-                                                        destParameter.Set(sourceParameter.AsDouble());
-                                                        break;
-                                                    case StorageType.Integer:
-                                                        destParameter.Set(sourceParameter.AsInteger());
-                                                        break;
-                                                    case StorageType.String:
-                                                        destParameter.Set(sourceParameter.AsString());
-                                                        break;
-                                                    case StorageType.ElementId:
-                                                        destParameter.Set(sourceParameter.AsElementId());
-                                                        break;
-                                                }
+                                                CopyParameterValue(sourceParameter, destParameter);
                                             }
                                             else
                                             {
@@ -491,7 +496,7 @@
             return errors;
         }
 
-        private List<string> ChangeInstances()
+        private IEnumerable<string> ChangeInstances()
         {
             var errors = new List<string>();
             var doc = _uiApplication.ActiveUIDocument.Document;
@@ -518,6 +523,17 @@
                             var familySymbol = extFamilyPair.DestinationFamily.FamilySymbols.FirstOrDefault(s => s.Name == familyInstance.Symbol.Name);
                             if (familySymbol != null)
                             {
+                                Dictionary<string, Parameter> instanceParameters = null;
+                                if (CopyFamilyInstanceParameters)
+                                {
+                                    instanceParameters = new Dictionary<string, Parameter>();
+                                    foreach (Parameter p in familyInstance.ParametersMap)
+                                    {
+                                        if (!p.IsReadOnly)
+                                            instanceParameters.Add(p.Definition.Name, p);
+                                    }
+                                }
+
                                 // Replacing the type for an instance of the family "{0}" {1}
                                 SetProgressMessage(string.Format(
                                     Language.GetItem(_langItem, "m4"),
@@ -528,6 +544,24 @@
                                 {
                                     changeSymbol.Start();
                                     familyInstance.Symbol = familySymbol.FamilySymbol;
+
+                                    try
+                                    {
+                                        if (instanceParameters != null)
+                                        {
+                                            foreach (var instanceParameter in instanceParameters)
+                                            {
+                                                var parameter = familyInstance.LookupParameter(instanceParameter.Key);
+                                                if (parameter != null && !parameter.IsReadOnly)
+                                                    CopyParameterValue(instanceParameter.Value, parameter);
+                                            }
+                                        }
+                                    }
+                                    catch (Exception exception)
+                                    {
+                                        ExceptionBox.Show(exception);
+                                    }
+
                                     changeSymbol.Commit();
                                 }
                             }
@@ -551,7 +585,7 @@
             return errors;
         }
 
-        private List<string> DeleteDuplicates()
+        private IEnumerable<string> DeleteDuplicates()
         {
             var errors = new List<string>();
             var doc = _uiApplication.ActiveUIDocument.Document;
@@ -581,24 +615,43 @@
                 }
             }
 
-            if (idsToDelete.Any())
+            if (!idsToDelete.Any())
+                return errors;
+
+            try
             {
-                try
+                using (var transaction = new Transaction(doc, "Delete"))
                 {
-                    using (var transaction = new Transaction(doc, "Delete"))
-                    {
-                        transaction.Start();
-                        doc.Delete(idsToDelete);
-                        transaction.Commit();
-                    }
+                    transaction.Start();
+                    doc.Delete(idsToDelete);
+                    transaction.Commit();
                 }
-                catch (Exception exception)
-                {
-                    ExceptionBox.Show(exception);
-                }
+            }
+            catch (Exception exception)
+            {
+                ExceptionBox.Show(exception);
             }
 
             return errors;
+        }
+
+        private static void CopyParameterValue(Parameter sourceParameter, Parameter destParameter)
+        {
+            switch (sourceParameter.StorageType)
+            {
+                case StorageType.Double:
+                    destParameter.Set(sourceParameter.AsDouble());
+                    break;
+                case StorageType.Integer:
+                    destParameter.Set(sourceParameter.AsInteger());
+                    break;
+                case StorageType.String:
+                    destParameter.Set(sourceParameter.AsString());
+                    break;
+                case StorageType.ElementId:
+                    destParameter.Set(sourceParameter.AsElementId());
+                    break;
+            }
         }
 
         private void ApplicationOnFailuresProcessing(object sender, FailuresProcessingEventArgs e)
@@ -636,7 +689,10 @@
             var dispatcher = _mainWindow.Dispatcher;
             if (dispatcher != null)
             {
-                dispatcher.Invoke(() => { ProgressText = msg; }, DispatcherPriority.Render);
+                dispatcher.Invoke(DispatcherPriority.Background, new Action(() =>
+                {
+                    ProgressText = msg;
+                }));
             }
             else
             {
