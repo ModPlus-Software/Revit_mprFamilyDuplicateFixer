@@ -3,6 +3,7 @@
     using System.Collections.ObjectModel;
     using System.Linq;
     using Autodesk.Revit.DB;
+    using ModPlusAPI.Annotations;
     using ModPlusAPI.Mvvm;
 
     /// <summary>
@@ -18,7 +19,7 @@
         public ExtFamily()
         {
             FamilySymbols = new ObservableCollection<ExtFamilySymbol>();
-            _checked = true;
+            _checked = false;
         }
 
         /// <summary>
@@ -43,6 +44,12 @@
             FillDataFromFamily();
         }
 
+        /// <summary>
+        /// Родительская пара
+        /// </summary>
+        [CanBeNull]
+        public ExtFamilyPair ParentFamilyPair { get; set; }
+
         /// <summary>Статус выбора в окне</summary>
         public bool? Checked
         {
@@ -64,6 +71,11 @@
         /// Revit's family
         /// </summary>
         public Family Family { get; }
+
+        /// <summary>
+        /// Family id
+        /// </summary>
+        public int FamilyId => Family.Id.IntegerValue;
 
         /// <summary>
         /// Имя семейства
@@ -88,7 +100,7 @@
             {
                 if (Family.Document.GetElement(familySymbolId) is FamilySymbol familySymbol)
                 {
-                    var extFamilySymbol = new ExtFamilySymbol(familySymbol);
+                    var extFamilySymbol = new ExtFamilySymbol(this, familySymbol);
                     extFamilySymbol.PropertyChanged += (sender, args) =>
                     {
                         if (args.PropertyName == "Checked")

@@ -1,7 +1,6 @@
 ﻿namespace mprFamilyDuplicateFixer.Model
 {
     using System.Collections.ObjectModel;
-    using System.ComponentModel;
     using System.Linq;
     using Autodesk.Revit.DB;
     using ModPlusAPI.Mvvm;
@@ -18,7 +17,7 @@
             FamilyPairs = new ObservableCollection<ExtFamilyPair>();
             Id = category.Id.IntegerValue;
             Name = category.Name;
-            _checked = true;
+            _checked = false;
         }
 
         /// <summary>

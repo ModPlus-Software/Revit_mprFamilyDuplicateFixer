@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Linq;
     using System.Windows.Input;
     using System.Windows.Threading;
@@ -247,6 +248,10 @@
                     }
 
                     var extFamilyPair = new ExtFamilyPair(sourceFamily, destinationFamily);
+                    foreach (var extFamilySymbol in sourceFamily.FamilySymbols)
+                    {
+                        extFamilySymbol.OnChecked += FamilySymbolOnChecked;
+                    }
                     extCategory.AddFamilyPair(extFamilyPair);
                 }
             }
@@ -261,6 +266,11 @@
                 var selectedPair = selectFamilyPairWindow.SelectedPair;
                 if (selectedPair != null)
                 {
+                    foreach (var extFamilySymbol in selectedPair.SourceFamily.FamilySymbols)
+                    {
+                        extFamilySymbol.OnChecked += FamilySymbolOnChecked;
+                    }
+
                     var category = FamiliesByCategories.FirstOrDefault(c => c.Id == selectedPair.CategoryId);
                     if (category == null)
                     {
@@ -269,6 +279,30 @@
                     }
 
                     category.AddFamilyPair(selectedPair);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Обработка события выбор типоразмера - чтобы нельзя было выбрать два одинаковых типоразмера двух
+        /// разных дубликатов, которые будут копироваться в одно главное семейство
+        /// </summary>
+        private void FamilySymbolOnChecked(object sender, bool e)
+        {
+            if (sender is ExtFamilySymbol extFamilySymbol && e)
+            {
+                foreach (var extFamily in FamiliesByCategories
+                    .SelectMany(c => c.FamilyPairs)
+                    .Where(p => p.SourceFamily != extFamilySymbol.ParentFamily &&
+                                p.DestinationFamily.Name == extFamilySymbol.ParentFamily.ParentFamilyPair.DestinationFamily.Name)
+                    .Select(p => p.SourceFamily))
+                {
+                    foreach (var familySymbol in extFamily.FamilySymbols)
+                    {
+                        if (familySymbol.Name == extFamilySymbol.Name &&
+                            familySymbol.Checked)
+                            familySymbol.Checked = false;
+                    }
                 }
             }
         }
@@ -353,66 +387,97 @@
             var doc = _uiApplication.ActiveUIDocument.Document;
             foreach (var extCategory in GetCheckedCategories())
             {
+                foreach (IGrouping<int, ExtFamilyPair> extFamilyPairGroup in GetCheckedFamilies(extCategory).GroupBy(p => p.DestinationFamily.FamilyId))
+                {
+                    if (!extFamilyPairGroup.Any())
+                        continue;
+
+                    try
+                    {
+                        var familyDoc = doc.EditFamily(extFamilyPairGroup.First().DestinationFamily.Family);
+                        if (familyDoc == null)
+                            continue;
+                    }
+                    catch (Exception exception)
+                    {
+                        ExceptionBox.Show(exception);
+                    }
+                }
+
                 foreach (var extFamilyPair in GetCheckedFamilies(extCategory))
                 {
                     try
                     {
                         var familyDoc = doc.EditFamily(extFamilyPair.DestinationFamily.Family);
-                        if (familyDoc != null)
+                        if (familyDoc == null) 
+                            continue;
+
+                        var familyManager = familyDoc.FamilyManager;
+                        using (var tr = new Transaction(familyDoc, "Create types"))
                         {
-                            var familyManager = familyDoc.FamilyManager;
-                            using (var tr = new Transaction(familyDoc, "Create types"))
+                            tr.Start();
+
+                            foreach (var extFamilySymbol in GetSourceCheckedSymbols(extFamilyPair))
+                            {
+                                if (extFamilyPair.DestinationFamily.FamilySymbols.Any(s => s.Name == extFamilySymbol.Name))
+                                    continue;
+
+                                // Creating type {0} for family {1}
+                                SetProgressMessage(string.Format(
+                                    Language.GetItem(_langItem, "m2"),
+                                    extFamilySymbol.Name,
+                                    extFamilyPair.DestinationFamily.Name));
+
+                                var hasSameTypeName = false;
+                                foreach (FamilyType familyManagerType in familyManager.Types)
+                                {
+                                    if (familyManagerType.Name == extFamilySymbol.Name)
+                                    {
+                                        hasSameTypeName = true;
+                                        break;
+                                    }
+                                }
+
+                                if (hasSameTypeName)
+                                    continue;
+
+                                var t = familyManager.NewType(extFamilySymbol.Name);
+                                if (t == null)
+                                {
+                                    // Type "{0}" was not created in the family "{1}"
+                                    errors.Add(string.Format(
+                                        Language.GetItem(_langItem, "e1"),
+                                        extFamilySymbol.Name,
+                                        extFamilyPair.DestinationFamily.Name));
+                                }
+                            }
+
+                            tr.Commit();
+                        }
+
+                        // This overload is necessary for reloading an edited family
+                        // back into the source document from which it was extracted
+                        var f = familyDoc.LoadFamily(doc, new LoadOpts());
+                        if (f != null)
+                        {
+                            extFamilyPair.DestinationFamily = new ExtFamily(f);
+                            using (var tr = new Transaction(doc, "Activate symbols"))
                             {
                                 tr.Start();
 
-                                foreach (var extFamilySymbol in GetSourceCheckedSymbols(extFamilyPair))
+                                foreach (var s in f.GetFamilySymbolIds())
                                 {
-                                    if (extFamilyPair.DestinationFamily.FamilySymbols.Any(s => s.Name == extFamilySymbol.Name))
-                                        continue;
-
-                                    // Creating type {0} for family {1}
-                                    SetProgressMessage(string.Format(
-                                        Language.GetItem(_langItem, "m2"),
-                                        extFamilySymbol.Name,
-                                        extFamilyPair.DestinationFamily.Name));
-                                    var t = familyManager.NewType(extFamilySymbol.Name);
-                                    if (t == null)
-                                    {
-                                        // Type "{0}" was not created in the family "{1}"
-                                        errors.Add(string.Format(
-                                            Language.GetItem(_langItem, "e1"),
-                                            extFamilySymbol.Name,
-                                            extFamilyPair.DestinationFamily.Name));
-                                    }
+                                    if (doc.GetElement(s) is FamilySymbol symbol && !symbol.IsActive)
+                                        symbol.Activate();
                                 }
 
                                 tr.Commit();
                             }
-
-                            // This overload is necessary for reloading an edited family
-                            // back into the source document from which it was extracted
-                            var f = familyDoc.LoadFamily(doc, new LoadOpts());
-                            if (f != null)
-                            {
-                                extFamilyPair.DestinationFamily = new ExtFamily(f);
-                                using (var tr = new Transaction(doc, "Activate symbols"))
-                                {
-                                    tr.Start();
-
-                                    foreach (var s in f.GetFamilySymbolIds())
-                                    {
-                                        if (doc.GetElement(s) is FamilySymbol symbol && !symbol.IsActive)
-                                            symbol.Activate();
-                                    }
-
-                                    tr.Commit();
-                                }
-                            }
-                            else
-                            {
-                                // The family "{0}" could not be loaded into the document
-                                errors.Add(string.Format(Language.GetItem(_langItem, "e2"), extFamilyPair.DestinationFamily.Name));
-                            }
+                        }
+                        else
+                        {
+                            // The family "{0}" could not be loaded into the document
+                            errors.Add(string.Format(Language.GetItem(_langItem, "e2"), extFamilyPair.DestinationFamily.Name));
                         }
                     }
                     catch (Exception exception)
@@ -523,14 +588,20 @@
                             var familySymbol = extFamilyPair.DestinationFamily.FamilySymbols.FirstOrDefault(s => s.Name == familyInstance.Symbol.Name);
                             if (familySymbol != null)
                             {
-                                Dictionary<string, Parameter> instanceParameters = null;
+                                List<ParameterDataHolder> parameterDataHolder = null;
                                 if (CopyFamilyInstanceParameters)
                                 {
-                                    instanceParameters = new Dictionary<string, Parameter>();
-                                    foreach (Parameter p in familyInstance.ParametersMap)
+                                    parameterDataHolder = new List<ParameterDataHolder>();
+                                    foreach (Parameter p in familyInstance.Parameters)
                                     {
-                                        if (!p.IsReadOnly)
-                                            instanceParameters.Add(p.Definition.Name, p);
+                                        if (!p.IsReadOnly &&
+                                            p.StorageType != StorageType.None &&
+                                            p.StorageType != StorageType.ElementId)
+                                        {
+                                            var dataHolder = new ParameterDataHolder(p);
+                                            Debug.Print($"Name {dataHolder.Name}, DoubleValue {dataHolder.DoubleValue}");
+                                            parameterDataHolder.Add(dataHolder);
+                                        }
                                     }
                                 }
 
@@ -544,25 +615,33 @@
                                 {
                                     changeSymbol.Start();
                                     familyInstance.Symbol = familySymbol.FamilySymbol;
+                                    changeSymbol.Commit();
+                                }
 
-                                    try
+                                if (parameterDataHolder != null && parameterDataHolder.Any())
+                                {
+                                    using (var changeSymbol = new Transaction(doc, "Copy instance parameter"))
                                     {
-                                        if (instanceParameters != null)
+                                        changeSymbol.Start();
+
+                                        try
                                         {
-                                            foreach (var instanceParameter in instanceParameters)
+                                            foreach (Parameter parameter in familyInstance.Parameters)
                                             {
-                                                var parameter = familyInstance.LookupParameter(instanceParameter.Key);
-                                                if (parameter != null && !parameter.IsReadOnly)
-                                                    CopyParameterValue(instanceParameter.Value, parameter);
+                                                if (parameter.IsReadOnly ||
+                                                    parameter.StorageType == StorageType.None ||
+                                                    parameter.StorageType == StorageType.ElementId)
+                                                    continue;
+                                                parameterDataHolder.FirstOrDefault(p => p.Name == parameter.Definition.Name)?.SetTo(parameter);
                                             }
                                         }
-                                    }
-                                    catch (Exception exception)
-                                    {
-                                        ExceptionBox.Show(exception);
-                                    }
+                                        catch (Exception exception)
+                                        {
+                                            ExceptionBox.Show(exception);
+                                        }
 
-                                    changeSymbol.Commit();
+                                        changeSymbol.Commit();
+                                    }
                                 }
                             }
                             else
@@ -707,7 +786,7 @@
         /// </summary>
         internal class LoadOpts : IFamilyLoadOptions
         {
-            /// <inheritdoc />
+            ///// <inheritdoc />
             public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
             {
                 overwriteParameterValues = true;
@@ -720,6 +799,69 @@
                 source = FamilySource.Family;
                 overwriteParameterValues = true;
                 return true;
+            }
+        }
+
+        internal class ParameterDataHolder
+        {
+            public ParameterDataHolder(Parameter parameter)
+            {
+                Name = parameter.Definition.Name;
+                StorageType = parameter.StorageType;
+                switch (StorageType)
+                {
+                    case StorageType.Double:
+                        DoubleValue = parameter.AsDouble();
+                        break;
+                    case StorageType.Integer:
+                        IntegerValue = parameter.AsInteger();
+                        break;
+                    case StorageType.String:
+                        StringValue = parameter.AsString() ?? string.Empty;
+                        break;
+                    case StorageType.ElementId:
+                        ElementIdValue = parameter.AsElementId();
+                        break;
+                }
+            }
+
+            public string Name { get; }
+
+            public StorageType StorageType { get; }
+
+            public double DoubleValue { get; }
+
+            public int IntegerValue { get; }
+
+            public string StringValue { get; }
+
+            public ElementId ElementIdValue { get; }
+
+            public void SetTo(Parameter parameter)
+            {
+                switch (StorageType)
+                {
+                    case StorageType.Double:
+                        if (Math.Abs(parameter.AsDouble() - DoubleValue) < 0.0001)
+                            return;
+                        parameter.Set(DoubleValue);
+                        break;
+                    case StorageType.Integer:
+                        if (parameter.AsInteger() == IntegerValue)
+                            return;
+                        parameter.Set(IntegerValue);
+                        break;
+                    case StorageType.String:
+                        if (parameter.AsString() == StringValue)
+                            return;
+                        parameter.Set(StringValue);
+                        break;
+                    case StorageType.ElementId:
+                        if (parameter.AsElementId() == ElementIdValue)
+                            return;
+                        parameter.Set(ElementIdValue);
+                        break;
+                }
             }
         }
     }

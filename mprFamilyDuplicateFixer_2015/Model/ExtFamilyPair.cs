@@ -7,6 +7,8 @@
     {
         public ExtFamilyPair(ExtFamily sourceFamily, ExtFamily destinationFamily)
         {
+            sourceFamily.ParentFamilyPair = this;
+            destinationFamily.ParentFamilyPair = this;
             SourceFamily = sourceFamily;
             DestinationFamily = destinationFamily;
             CategoryId = sourceFamily.CategoryId;

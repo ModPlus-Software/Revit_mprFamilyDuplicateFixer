@@ -87,6 +87,9 @@
     <Compile Include="..\mprfamilyduplicatefixer_2015\viewmodel\MainViewModel.cs">
       <Link>ViewModel\MainViewModel.cs</Link>
     </Compile>
+    <Compile Include="..\mprFamilyDuplicateFixer_2015\View\BooleanMultiConverter.cs">
+      <Link>View\BooleanMultiConverter.cs</Link>
+    </Compile>
     <Compile Include="..\mprfamilyduplicatefixer_2015\view\MainWindow.xaml.cs">
       <Link>View\MainWindow.xaml.cs</Link>
       <DependentUpon>MainWindow.xaml</DependentUpon>

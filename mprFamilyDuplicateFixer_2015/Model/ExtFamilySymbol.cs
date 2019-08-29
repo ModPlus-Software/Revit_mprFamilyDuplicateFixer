@@ -1,5 +1,6 @@
 ﻿namespace mprFamilyDuplicateFixer.Model
 {
+    using System;
     using Autodesk.Revit.DB;
     using ModPlusAPI.Mvvm;
 
@@ -7,12 +8,23 @@
     {
         private bool _checked;
 
-        public ExtFamilySymbol(FamilySymbol familySymbol)
+        public ExtFamilySymbol(ExtFamily extFamily, FamilySymbol familySymbol)
         {
+            ParentFamily = extFamily;
             FamilySymbol = familySymbol;
             Name = familySymbol.Name;
-            _checked = true;
+            _checked = false;
         }
+
+        /// <summary>
+        /// On checked state changed
+        /// </summary>
+        public event EventHandler<bool> OnChecked;
+
+        /// <summary>
+        /// Ссылка на родительское семейство
+        /// </summary>
+        public ExtFamily ParentFamily { get; }
 
         /// <summary>
         /// Revit's FamilySymbol
@@ -34,6 +46,7 @@
                     return;
                 _checked = value;
                 OnPropertyChanged();
+                OnChecked?.Invoke(this, value);
             }
         }
     }
