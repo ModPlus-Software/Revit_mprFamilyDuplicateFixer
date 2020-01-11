@@ -99,8 +99,8 @@
                 LbDestinationFamilies.SelectedItem is ExtFamilyForSelection destFamilyForSelection)
             {
                 SelectedPair = new ExtFamilyPair(
-                    new ExtFamily(sourceFamilyForSelection),
-                    new ExtFamily(destFamilyForSelection));
+                    new ExtFamily(sourceFamilyForSelection, false),
+                    new ExtFamily(destFamilyForSelection, true));
             }
 
             DialogResult = true;

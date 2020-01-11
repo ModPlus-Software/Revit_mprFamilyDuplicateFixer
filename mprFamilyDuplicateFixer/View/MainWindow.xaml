@@ -69,16 +69,25 @@
                             <!-- destination -->
                             <TextBlock Grid.Row="0" Grid.Column="2" VerticalAlignment="Center"
                                        Text="{Binding Path=DestinationFamily.Name}"></TextBlock>
-                            <ItemsControl Grid.Row="1" Grid.Column="2" Background="Transparent"
+                            <ListView Grid.Row="1" Grid.Column="2" Background="Transparent"
                                       BorderThickness="0" Margin="16 0 0 0"
                                       ItemsSource="{Binding Path=DestinationFamily.FamilySymbols}">
-                                <ItemsControl.ItemTemplate>
+                                <ListView.ItemTemplate>
                                     <DataTemplate DataType="{x:Type model:ExtFamilySymbol}">
-                                        <TextBlock Text="{Binding Path=Name}"
-                                                   Margin="{DynamicResource ModPlusDefaultMargin}"></TextBlock>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox Margin="0" Grid.Column="0"
+                                                      Visibility="{Binding Path=CheckStateVisibility}"
+                                                      IsChecked="{Binding Path=Checked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"/>
+                                            <TextBlock Grid.Column="1" Text="{Binding Path=Name}"
+                                                       Margin="{DynamicResource ModPlusDefaultMargin}"></TextBlock>
+                                        </Grid>
                                     </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                </ListView.ItemTemplate>
+                            </ListView>
                         </Grid>
                     </DataTemplate>
                 </HierarchicalDataTemplate.ItemTemplate>
@@ -120,37 +129,115 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <StackPanel Orientation="Vertical" Grid.Row="0"
-                        IsEnabled="{Binding Path=IsEnableControls}">
+
+            <Grid Grid.Row="0" IsEnabled="{Binding Path=IsEnableControls}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.Resources>
+                    <Viewbox x:Key="InfoIcon" Width="24" Height="24" x:Shared="False">
+                        <Canvas Width="24" Height="24">
+                            <Path Data="M13.5,4A1.5,1.5 0 0,0 12,5.5A1.5,1.5 0 0,0 13.5,7A1.5,1.5 0 0,0 15,5.5A1.5,1.5 0 0,0 13.5,4M13.14,8.77C11.95,8.87 8.7,11.46 8.7,11.46C8.5,11.61 8.56,11.6 8.72,11.88C8.88,12.15 8.86,12.17 9.05,12.04C9.25,11.91 9.58,11.7 10.13,11.36C12.25,10 10.47,13.14 9.56,18.43C9.2,21.05 11.56,19.7 12.17,19.3C12.77,18.91 14.38,17.8 14.54,17.69C14.76,17.54 14.6,17.42 14.43,17.17C14.31,17 14.19,17.12 14.19,17.12C13.54,17.55 12.35,18.45 12.19,17.88C12,17.31 13.22,13.4 13.89,10.71C14,10.07 14.3,8.67 13.14,8.77Z" 
+                                  Fill="{DynamicResource AccentColorBrush}" />
+                        </Canvas>
+                    </Viewbox>
+                    <Style x:Key="InfoGridStyle" TargetType="{x:Type Grid}">
+                        <Setter Property="Background" Value="Transparent"></Setter>
+                        <Setter Property="ToolTipService.InitialShowDelay" Value="0"></Setter>
+                        <Setter Property="ToolTipService.ShowDuration" Value="15000"></Setter>
+                    </Style>
+                </Grid.Resources>
+                
                 <!-- Копировать недостающие типоразмеры -->
-                <CheckBox IsChecked="{Binding Path=CopyFamilySymbols, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Content="{Binding Source={StaticResource Lang}, XPath=h1}"
-                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t3}"></CheckBox>
+                <Grid 
+                    Style="{StaticResource InfoGridStyle}"
+                    Grid.Column="0" Grid.Row="0"
+                    ToolTip="{Binding Source={StaticResource Lang}, XPath=t3}">
+                    <ContentControl Content="{StaticResource InfoIcon}"/>
+                </Grid>
+                <CheckBox 
+                    Grid.Column="1" Grid.Row="0"
+                    IsChecked="{Binding Path=CopyFamilySymbols, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Content="{Binding Source={StaticResource Lang}, XPath=h1}"/>
+                
                 <!-- Копировать значения параметров типоразмеров -->
-                <CheckBox IsChecked="{Binding Path=CopyFamilySymbolParameters, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Content="{Binding Source={StaticResource Lang}, XPath=h2}"
-                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t4}"></CheckBox>
+                <Grid 
+                    Style="{StaticResource InfoGridStyle}"
+                    Grid.Column="0" Grid.Row="1"
+                    ToolTip="{Binding Source={StaticResource Lang}, XPath=t4}">
+                    <ContentControl Content="{StaticResource InfoIcon}"/>
+                </Grid>
+                <CheckBox 
+                    Grid.Column="1" Grid.Row="1"
+                    IsChecked="{Binding Path=CopyFamilySymbolParameters, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Content="{Binding Source={StaticResource Lang}, XPath=h2}"/>
+                
                 <!-- Заменить типоразмер у экземпляров семейств -->
-                <CheckBox IsChecked="{Binding Path=ChangeFamilyInstancesSymbol, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          Name="ChkChangeFamilyInstancesSymbol"
-                          Content="{Binding Source={StaticResource Lang}, XPath=h3}"
-                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t5}"></CheckBox>
+                <Grid 
+                    Style="{StaticResource InfoGridStyle}"
+                    Grid.Column="0" Grid.Row="2"
+                    ToolTip="{Binding Source={StaticResource Lang}, XPath=t5}">
+                    <ContentControl Content="{StaticResource InfoIcon}"/>
+                </Grid>
+                <CheckBox
+                    Grid.Column="1" Grid.Row="2"
+                    IsChecked="{Binding Path=ChangeFamilyInstancesSymbol, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    Name="ChkChangeFamilyInstancesSymbol"
+                    Content="{Binding Source={StaticResource Lang}, XPath=h3}"/>
+
+                <!-- Установить типоразмер из основного семейства -->
+                <Grid 
+                    Style="{StaticResource InfoGridStyle}"
+                    Grid.Column="0" Grid.Row="3"
+                    ToolTip="{Binding Source={StaticResource Lang}, XPath=t8}">
+                    <ContentControl Content="{StaticResource InfoIcon}"/>
+                </Grid>
+                <CheckBox
+                    Grid.Column="1" Grid.Row="3"
+                    IsChecked="{Binding Path=SetFamilyInstanceSymbolFromSourceFamily, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"
+                    Content="{Binding Source={StaticResource Lang}, XPath=h12}"/>
+
                 <!-- Копировать значения параметров заменяемого экземпляра семейства -->
-                <CheckBox IsChecked="{Binding Path=CopyFamilyInstanceParameters, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"
-                          Content="{Binding Source={StaticResource Lang}, XPath=h11}"
-                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t7}"></CheckBox>
+                <Grid 
+                    Style="{StaticResource InfoGridStyle}"
+                    Grid.Column="0" Grid.Row="4"
+                    ToolTip="{Binding Source={StaticResource Lang}, XPath=t7}">
+                    <ContentControl Content="{StaticResource InfoIcon}"/>
+                </Grid>
+                <CheckBox
+                    Grid.Column="1" Grid.Row="4"
+                    IsChecked="{Binding Path=CopyFamilyInstanceParameters, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"
+                    Content="{Binding Source={StaticResource Lang}, XPath=h11}"/>
+                
                 <!-- Удалить дубликаты семейств -->
-                <CheckBox IsChecked="{Binding Path=DeleteDuplicateFamilies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                          IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"
-                          Content="{Binding Source={StaticResource Lang}, XPath=h4}"
-                          ToolTip="{Binding Source={StaticResource Lang}, XPath=t6}"></CheckBox>
-            </StackPanel>
+                <Grid 
+                    Style="{StaticResource InfoGridStyle}"
+                    Grid.Column="0" Grid.Row="5"
+                    ToolTip="{Binding Source={StaticResource Lang}, XPath=t6}">
+                    <ContentControl Content="{StaticResource InfoIcon}"/>
+                </Grid>
+                <CheckBox
+                    Grid.Column="1" Grid.Row="5"
+                    IsChecked="{Binding Path=DeleteDuplicateFamilies, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                    IsEnabled="{Binding ElementName=ChkChangeFamilyInstancesSymbol, Path=IsChecked}"
+                    Content="{Binding Source={StaticResource Lang}, XPath=h4}"/>
+            </Grid>
 
             <TextBlock Grid.Row="1" Margin="4 0" TextWrapping="Wrap"
                        Text="{Binding Path=ProgressText}"
                        TextAlignment="Center"></TextBlock>
-            
+
             <!-- Выполнить -->
             <Button Grid.Row="2" Content="{Binding Source={StaticResource Lang}, XPath=h5}"
                     Command="{Binding Path=ExecuteCommand}">

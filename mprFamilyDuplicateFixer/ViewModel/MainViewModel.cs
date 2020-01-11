@@ -31,6 +31,7 @@
         private bool _copyFamilySymbols;
         private bool _copyFamilyInstanceParameters;
         private bool _deleteDuplicateFamilies;
+        private bool _setFamilyInstanceSymbolFromSourceFamily;
         private bool _isEnableControls = true;
         private string _progressText;
 
@@ -52,10 +53,15 @@
                 CopyFamilySymbolParameters = b;
             if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(ChangeFamilyInstancesSymbol)), out b))
                 ChangeFamilyInstancesSymbol = b;
-            if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(CopyFamilyInstanceParameters)), out b))
-                CopyFamilyInstanceParameters = b;
-            if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(DeleteDuplicateFamilies)), out b))
-                DeleteDuplicateFamilies = b;
+            if (ChangeFamilyInstancesSymbol)
+            {
+                if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(SetFamilyInstanceSymbolFromSourceFamily)), out b))
+                    SetFamilyInstanceSymbolFromSourceFamily = b;
+                if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(CopyFamilyInstanceParameters)), out b))
+                    CopyFamilyInstanceParameters = b;
+                if (bool.TryParse(UserConfigFile.GetValue(_langItem, nameof(DeleteDuplicateFamilies)), out b))
+                    DeleteDuplicateFamilies = b;
+            }
         }
 
         /// <summary>
@@ -63,7 +69,9 @@
         /// </summary>
         public ObservableCollection<ExtCategory> FamiliesByCategories { get; }
 
-        /// <summary>Доступность взаимодействия с элементами окна</summary>
+        /// <summary>
+        /// Доступность взаимодействия с элементами окна
+        /// </summary>
         public bool IsEnableControls
         {
             get => _isEnableControls;
@@ -76,7 +84,9 @@
             }
         }
 
-        /// <summary>Progress text</summary>
+        /// <summary>
+        /// Progress text
+        /// </summary>
         public string ProgressText
         {
             get => _progressText;
@@ -87,7 +97,9 @@
             }
         }
 
-        /// <summary>Копировать типоразмеры</summary>
+        /// <summary>
+        /// Копировать типоразмеры
+        /// </summary>
         public bool CopyFamilySymbols
         {
             get => _copyFamilySymbols;
@@ -102,7 +114,9 @@
             }
         }
 
-        /// <summary>Копировать значения параметров</summary>
+        /// <summary>
+        /// Копировать значения параметров
+        /// </summary>
         public bool CopyFamilySymbolParameters
         {
             get => _copyFamilySymbolParameters;
@@ -117,7 +131,9 @@
             }
         }
 
-        /// <summary>Заменить типоразмер у экземпляров семейств</summary>
+        /// <summary>
+        /// Заменить типоразмер у экземпляров семейств
+        /// </summary>
         public bool ChangeFamilyInstancesSymbol
         {
             get => _changeFamilyInstancesSymbol;
@@ -130,27 +146,53 @@
                 OnPropertyChanged(nameof(CanExecute));
                 if (!value)
                 {
+                    SetFamilyInstanceSymbolFromSourceFamily = false;
                     DeleteDuplicateFamilies = false;
                     CopyFamilyInstanceParameters = false;
                 }
+
                 UserConfigFile.SetValue(_langItem, nameof(ChangeFamilyInstancesSymbol), value.ToString(), true);
             }
         }
 
-        /// <summary>Копировать параметры экземпляра</summary>
+        /// <summary>
+        /// Установить типоразмер из основного семейства
+        /// </summary>
+        public bool SetFamilyInstanceSymbolFromSourceFamily
+        {
+            get => _setFamilyInstanceSymbolFromSourceFamily;
+            set
+            {
+                if (_setFamilyInstanceSymbolFromSourceFamily == value)
+                    return;
+                _setFamilyInstanceSymbolFromSourceFamily = value;
+                OnPropertyChanged();
+                
+                SetCheckVisibilityForDestinationFamilies(value);
+
+                UserConfigFile.SetValue(_langItem, nameof(SetFamilyInstanceSymbolFromSourceFamily), value.ToString(), true);
+            }
+        }
+
+        /// <summary>
+        /// Копировать параметры экземпляра
+        /// </summary>
         public bool CopyFamilyInstanceParameters
         {
             get => _copyFamilyInstanceParameters;
             set
             {
-                if (Equals(value, _copyFamilyInstanceParameters)) return;
+                if (Equals(value, _copyFamilyInstanceParameters))
+                    return;
                 _copyFamilyInstanceParameters = value;
                 OnPropertyChanged();
                 UserConfigFile.SetValue(_langItem, nameof(CopyFamilyInstanceParameters), value.ToString(), true);
             }
         }
 
-        /// <summary>Удалить дубликаты</summary>
+        /// <summary>
+        /// Удалить дубликаты
+        /// </summary>
         public bool DeleteDuplicateFamilies
         {
             get => _deleteDuplicateFamilies;
@@ -164,18 +206,20 @@
             }
         }
 
-        /// <summary>Можно ли перейти к выполнению</summary>
+        /// <summary>
+        /// Можно ли перейти к выполнению
+        /// </summary>
         public bool CanExecute => CopyFamilySymbols || CopyFamilySymbolParameters || ChangeFamilyInstancesSymbol;
 
         /// <summary>
         /// Команда добавления новой пары семейств
         /// </summary>
-        public ICommand AddNewFamilyPairCommand => new RelayCommand(AddNewFamilyPair);
+        public ICommand AddNewFamilyPairCommand => new RelayCommandWithoutParameter(AddNewFamilyPair);
 
         /// <summary>
         /// Выполнить
         /// </summary>
-        public ICommand ExecuteCommand => new RelayCommand(Execute);
+        public ICommand ExecuteCommand => new RelayCommandWithoutParameter(Execute);
 
         #region Methods
 
@@ -237,8 +281,8 @@
 
                 foreach (var dFamily in pair.Value)
                 {
-                    var sourceFamily = new ExtFamily(dFamily);
-                    var destinationFamily = new ExtFamily(pair.Key);
+                    var sourceFamily = new ExtFamily(dFamily, false);
+                    var destinationFamily = new ExtFamily(pair.Key, true);
 
                     // если в семействе назначения есть такие типоразмеры, то по-умолчанию в семействе источнике снимаю галочку
                     foreach (var sourceFamilyFamilySymbol in sourceFamily.FamilySymbols)
@@ -252,12 +296,15 @@
                     {
                         extFamilySymbol.OnChecked += FamilySymbolOnChecked;
                     }
+
                     extCategory.AddFamilyPair(extFamilyPair);
                 }
             }
+
+            SetCheckVisibilityForDestinationFamilies(SetFamilyInstanceSymbolFromSourceFamily);
         }
 
-        private void AddNewFamilyPair(object o)
+        private void AddNewFamilyPair()
         {
             var skipFamilies = FamiliesByCategories.SelectMany(c => c.FamilyPairs.Select(p => p.SourceFamily.Name)).ToList();
             var selectFamilyPairWindow = new SelectFamilyPairWindow(_uiApplication, skipFamilies);
@@ -294,7 +341,7 @@
                 foreach (var extFamily in FamiliesByCategories
                     .SelectMany(c => c.FamilyPairs)
                     .Where(p => p.SourceFamily != extFamilySymbol.ParentFamily &&
-                                p.DestinationFamily.Name == extFamilySymbol.ParentFamily.ParentFamilyPair.DestinationFamily.Name)
+                                p.DestinationFamily.Name == extFamilySymbol.ParentFamily.ParentFamilyPair?.DestinationFamily.Name)
                     .Select(p => p.SourceFamily))
                 {
                     foreach (var familySymbol in extFamily.FamilySymbols)
@@ -331,7 +378,7 @@
             return false;
         }
 
-        private async void Execute(object o)
+        private async void Execute()
         {
             try
             {
@@ -460,7 +507,7 @@
                         var f = familyDoc.LoadFamily(doc, new LoadOpts());
                         if (f != null)
                         {
-                            extFamilyPair.DestinationFamily = new ExtFamily(f);
+                            extFamilyPair.DestinationFamily = new ExtFamily(f, true);
                             using (var tr = new Transaction(doc, "Activate symbols"))
                             {
                                 tr.Start();
@@ -576,7 +623,7 @@
 
             foreach (var extCategory in GetCheckedCategories())
             {
-                foreach (var extFamilyPair in GetCheckedFamilies(extCategory))
+                foreach (ExtFamilyPair extFamilyPair in GetCheckedFamilies(extCategory))
                 {
                     try
                     {
@@ -585,23 +632,24 @@
 
                         foreach (var familyInstance in groupedFamilyInstances[extFamilyPair.SourceFamily.Name])
                         {
-                            var familySymbol = extFamilyPair.DestinationFamily.FamilySymbols.FirstOrDefault(s => s.Name == familyInstance.Symbol.Name);
+                            var familySymbol = SetFamilyInstanceSymbolFromSourceFamily 
+                                ? extFamilyPair.DestinationFamily.FamilySymbols.FirstOrDefault(s => s.Checked)
+                                : extFamilyPair.DestinationFamily.FamilySymbols.FirstOrDefault(s => s.Name == familyInstance.Symbol.Name);
+
                             if (familySymbol != null)
                             {
                                 List<ParameterDataHolder> parameterDataHolder = null;
                                 if (CopyFamilyInstanceParameters)
                                 {
                                     parameterDataHolder = new List<ParameterDataHolder>();
-                                    foreach (Parameter p in familyInstance.Parameters)
+                                    foreach (Parameter parameter in familyInstance.Parameters)
                                     {
-                                        if (!p.IsReadOnly &&
-                                            p.StorageType != StorageType.None &&
-                                            p.StorageType != StorageType.ElementId)
-                                        {
-                                            var dataHolder = new ParameterDataHolder(p);
-                                            Debug.Print($"Name {dataHolder.Name}, DoubleValue {dataHolder.DoubleValue}");
-                                            parameterDataHolder.Add(dataHolder);
-                                        }
+                                        if (!ParameterDataHolder.IsAllowableParameter(parameter))
+                                            continue;
+                                        
+                                        var dataHolder = new ParameterDataHolder(parameter);
+                                        Debug.Print($"Name {dataHolder.Name}, DoubleValue {dataHolder.DoubleValue}");
+                                        parameterDataHolder.Add(dataHolder);
                                     }
                                 }
 
@@ -628,10 +676,9 @@
                                         {
                                             foreach (Parameter parameter in familyInstance.Parameters)
                                             {
-                                                if (parameter.IsReadOnly ||
-                                                    parameter.StorageType == StorageType.None ||
-                                                    parameter.StorageType == StorageType.ElementId)
+                                                if (!ParameterDataHolder.IsAllowableParameter(parameter))
                                                     continue;
+
                                                 parameterDataHolder.FirstOrDefault(p => p.Name == parameter.Definition.Name)?.SetTo(parameter);
                                             }
                                         }
@@ -753,6 +800,22 @@
             return extFamilyPair.SourceFamily.FamilySymbols.Where(s => s.Checked);
         }
 
+        private void SetCheckVisibilityForDestinationFamilies(bool isVisible)
+        {
+            foreach (var category in FamiliesByCategories)
+            {
+                foreach (var familyPair in category.FamilyPairs)
+                {
+                    foreach (var familySymbol in familyPair.DestinationFamily.FamilySymbols)
+                    {
+                        familySymbol.CheckStateVisibility = isVisible 
+                            ? System.Windows.Visibility.Visible 
+                            : System.Windows.Visibility.Collapsed;
+                    }
+                }
+            }
+        }
+
         private bool IsAnyChecked()
         {
             List<bool> checkedSymbols = FamiliesByCategories
@@ -786,7 +849,7 @@
         /// </summary>
         internal class LoadOpts : IFamilyLoadOptions
         {
-            ///// <inheritdoc />
+            /// <inheritdoc/>
             public bool OnFamilyFound(bool familyInUse, out bool overwriteParameterValues)
             {
                 overwriteParameterValues = true;
@@ -802,6 +865,9 @@
             }
         }
 
+        /// <summary>
+        /// Вспомогательный объект хранения значений параметров
+        /// </summary>
         internal class ParameterDataHolder
         {
             public ParameterDataHolder(Parameter parameter)
@@ -836,6 +902,26 @@
             public string StringValue { get; }
 
             public ElementId ElementIdValue { get; }
+
+            /// <summary>
+            /// Является ли параметр допустимым для обработки копирования
+            /// </summary>
+            /// <param name="parameter">Проверяемый параметр</param>
+            public static bool IsAllowableParameter(Parameter parameter)
+            {
+                if (parameter.IsReadOnly ||
+                    parameter.StorageType == StorageType.None)
+                    return false;
+                if (parameter.Definition is InternalDefinition internalDefinition)
+                {
+                    if (internalDefinition.BuiltInParameter == BuiltInParameter.ELEM_TYPE_PARAM ||
+                        internalDefinition.BuiltInParameter == BuiltInParameter.ELEM_FAMILY_PARAM ||
+                        internalDefinition.BuiltInParameter == BuiltInParameter.ELEM_FAMILY_AND_TYPE_PARAM)
+                        return false;
+                }
+
+                return true;
+            }
 
             public void SetTo(Parameter parameter)
             {

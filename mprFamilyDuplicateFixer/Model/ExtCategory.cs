@@ -35,7 +35,9 @@
         /// </summary>
         public ObservableCollection<ExtFamilyPair> FamilyPairs { get; }
         
-        /// <summary>Статус выбора в окне</summary>
+        /// <summary>
+        /// Статус выбора в окне
+        /// </summary>
         public bool? Checked
         {
             get => _checked;
@@ -55,7 +57,7 @@
         /// <summary>
         /// Добавление пары семейств с подпиской на событие выбора
         /// </summary>
-        /// <param name="extFamilyPair"></param>
+        /// <param name="extFamilyPair">Экземпляр пары <see cref="ExtFamilyPair"/></param>
         public void AddFamilyPair(ExtFamilyPair extFamilyPair)
         {
             extFamilyPair.SourceFamily.PropertyChanged += (sender, args) =>

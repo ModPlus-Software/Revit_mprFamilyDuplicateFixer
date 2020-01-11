@@ -7,6 +7,7 @@
     public class ExtFamilySymbol : VmBase
     {
         private bool _checked;
+        private System.Windows.Visibility _checkStateVisibility = System.Windows.Visibility.Visible;
 
         public ExtFamilySymbol(ExtFamily extFamily, FamilySymbol familySymbol)
         {
@@ -36,7 +37,9 @@
         /// </summary>
         public string Name { get; }
 
-        /// <summary>Статус выбора в окне</summary>
+        /// <summary>
+        /// Статус выбора в окне
+        /// </summary>
         public bool Checked
         {
             get => _checked;
@@ -47,6 +50,21 @@
                 _checked = value;
                 OnPropertyChanged();
                 OnChecked?.Invoke(this, value);
+            }
+        }
+
+        /// <summary>
+        /// Видимость <see cref="Checked"/>
+        /// </summary>
+        public System.Windows.Visibility CheckStateVisibility
+        {
+            get => _checkStateVisibility;
+            set
+            {
+                if (_checkStateVisibility == value)
+                    return;
+                _checkStateVisibility = value;
+                OnPropertyChanged();
             }
         }
     }
