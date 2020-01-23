@@ -34,12 +34,13 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <!-- Выберите семейство, являющееся дубликатом -->
         <TextBlock Grid.Row="0" Grid.Column="0" Margin="{DynamicResource ModPlusDefaultMargin}"
                    TextWrapping="Wrap" TextAlignment="Center"
                    Text="{Binding Source={StaticResource Lang}, XPath=h7}"></TextBlock>
-        <TreeView Grid.Row="1" Grid.Column="0"
+        <TreeView Grid.Row="1" Grid.RowSpan="2" Grid.Column="0"
                   Name="TvAllFamilies" SelectedItemChanged="TvAllFamilies_OnSelectedItemChanged"></TreeView>
 
         <!-- Выберите основное семейство (в которое будет производиться копирование типоразмеров) -->
@@ -58,9 +59,12 @@
         <TextBlock Grid.Row="1" Grid.Column="1" Margin="8 0"
                    Name="TbMessageAboutSearchingDuplicates" Visibility="Collapsed"
                    TextWrapping="Wrap" Text="{Binding Source={StaticResource Lang}, XPath=h10}"></TextBlock>
+        
+        <TextBox Grid.Row="2" Grid.Column="1" TextWrapping="Wrap" IsReadOnly="True"
+                 Text="{Binding Source={StaticResource Lang}, XPath=h13}"></TextBox>
 
         <!-- accept -->
-        <Button Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+        <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                 HorizontalAlignment="Center" IsEnabled="False"
                 Content="{Binding Source={StaticResource Lang}, XPath=h9}" Name="BtAccept"
                 Click="BtAccept_OnClick"></Button>
