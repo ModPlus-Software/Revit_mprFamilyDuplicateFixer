@@ -1,7 +1,7 @@
 # mprFamilyDuplicateFixer
 Automate Duplicate Family Correction
 ### Prodcut ###
-Revit >= 2015
+Revit >= 2017
 ### Description ###
 Plugin allows you to copy types from duplicate families to the main families, copy the values of the parameters of types, update instances of families, and also delete duplicate families
 ### Plugin card ###
