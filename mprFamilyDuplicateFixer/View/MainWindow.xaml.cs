@@ -11,7 +11,7 @@
         public MainWindow()
         {
             InitializeComponent();
-            Title = ModPlusAPI.Language.GetFunctionLocalName(ModPlusConnector.Instance.Name, ModPlusConnector.Instance.LName);
+            Title = ModPlusAPI.Language.GetFunctionLocalName(ModPlusConnector.Instance);
         }
     }
 }
