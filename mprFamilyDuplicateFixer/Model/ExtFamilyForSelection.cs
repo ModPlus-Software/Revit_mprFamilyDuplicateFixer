@@ -3,12 +3,16 @@
     using System.Collections.Generic;
     using System.Linq;
     using Autodesk.Revit.DB;
+    using ModPlusAPI.Mvvm;
 
     /// <summary>
     /// Обертка на семейство для окна выбора
     /// </summary>
-    public class ExtFamilyForSelection
+    public class ExtFamilyForSelection : VmBase
     {
+        private List<FamilySymbol> _familySymbols;
+        private bool _isChecked;
+
         /// <summary>
         /// Конструктор
         /// </summary>
@@ -37,6 +41,32 @@
         public string Name { get; }
 
         /// <summary>
+        /// Семейство отмечено галкой
+        /// </summary>
+        public bool IsChecked
+        {
+            get => _isChecked;
+            set
+            {
+                if (_isChecked == value)
+                    return;
+                _isChecked = value;
+                OnPropertyChanged();
+                ParentCategory.ChangeCheckedStatusWithoutSetter();
+            }
+        }
+
+        /// <summary>
+        /// Установить свойство <see cref="IsChecked"/> без использования сеттера
+        /// </summary>
+        /// <param name="isChecked">Is checked</param>
+        public void SetIsCheckedWithoutSetter(bool isChecked)
+        {
+            _isChecked = isChecked;
+            OnPropertyChanged(nameof(IsChecked));
+        }
+
+        /// <summary>
         /// Проверяет, имеет ли данное семейство типы, схожие с проверяемым семейством
         /// </summary>
         /// <param name="extFamily">Проверяемое семейство</param>
@@ -58,8 +88,6 @@
 
             return false;
         }
-
-        private List<FamilySymbol> _familySymbols;
 
         public List<FamilySymbol> GetFamilySymbols()
         {

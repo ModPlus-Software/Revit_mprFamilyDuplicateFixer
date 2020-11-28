@@ -1,4 +1,4 @@
-﻿namespace mprFamilyDuplicateFixer.Model
+﻿namespace mprFamilyDuplicateFixer.Model.FamiliesFix
 {
     /// <summary>
     /// Пара семейств

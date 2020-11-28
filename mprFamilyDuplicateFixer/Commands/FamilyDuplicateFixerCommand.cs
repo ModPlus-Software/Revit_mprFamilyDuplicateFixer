@@ -21,9 +21,9 @@
 #endif
 
             var mainWindow = new MainWindow();
-            var mainViewModel = new MainViewModel(commandData.Application, mainWindow);
+            var mainViewModel = new MainContext(commandData.Application, mainWindow);
             mainWindow.DataContext = mainViewModel;
-            mainWindow.ContentRendered += (sender, args) => mainViewModel.ReadFamilies();
+            mainWindow.ContentRendered += (sender, args) => mainViewModel.LoadDataFromModel();
             mainWindow.ShowDialog();
 
             return Result.Succeeded;

@@ -1,7 +1,6 @@
-﻿namespace mprFamilyDuplicateFixer.Model
+﻿namespace mprFamilyDuplicateFixer.Model.FamiliesFix
 {
     using System.Collections.ObjectModel;
-    using System.Collections.Specialized;
     using System.ComponentModel;
     using System.Linq;
     using Autodesk.Revit.DB;
@@ -21,7 +20,7 @@
         /// Базовый конструктор
         /// </summary>
         /// <param name="onlyOneSymbolCanBeSelected">Только один типоразмер может быть выбран</param>
-        public ExtFamily(bool onlyOneSymbolCanBeSelected)
+        private ExtFamily(bool onlyOneSymbolCanBeSelected)
         {
             _onlyOneSymbolCanBeSelected = onlyOneSymbolCanBeSelected;
             FamilySymbols = new ObservableCollection<ExtFamilySymbol>();

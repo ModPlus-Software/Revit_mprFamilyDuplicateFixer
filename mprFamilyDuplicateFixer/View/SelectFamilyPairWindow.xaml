@@ -67,6 +67,6 @@
         <Button Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
                 HorizontalAlignment="Center" IsEnabled="False"
                 Content="{Binding Source={StaticResource Lang}, XPath=h9}" Name="BtAccept"
-                Click="BtAccept_OnClick"></Button>
+                Click="BtAccept_OnClick"/>
     </Grid>
 </mps:ModPlusWindow>

@@ -1,59 +1,35 @@
-﻿namespace mprFamilyDuplicateFixer.Model
+﻿namespace mprFamilyDuplicateFixer.Model.FamiliesFix
 {
     using System.Collections.ObjectModel;
+    using System.ComponentModel;
     using System.Linq;
     using Autodesk.Revit.DB;
-    using ModPlusAPI.Mvvm;
+    using Base;
 
     /// <summary>
-    /// Категория Revit
+    /// Категория Revit, содержащая <see cref="ExtFamilyPair"/>
     /// </summary>
-    public class ExtCategory : VmBase
+    public class ExtCategory : BaseExtCategory
     {
-        private bool? _checked;
+        private readonly ObservableCollection<ExtFamilyPair> _familyPairs;
 
-        public ExtCategory(Category category)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ExtCategory"/> class.
+        /// </summary>
+        /// <param name="category"><see cref="Category"/></param>
+        public ExtCategory(Category category) 
+            : base(category)
         {
-            FamilyPairs = new ObservableCollection<ExtFamilyPair>();
-            Id = category.Id.IntegerValue;
-            Name = category.Name;
-            _checked = false;
+            _familyPairs = new ObservableCollection<ExtFamilyPair>();
+            FamilyPairs = new ReadOnlyObservableCollection<ExtFamilyPair>(_familyPairs);
+            PropertyChanged += OnPropertyChanged;
         }
-
-        /// <summary>
-        /// Category Id
-        /// </summary>
-        public int Id { get; }
-
-        /// <summary>
-        /// Имя категории
-        /// </summary>
-        public string Name { get; }
 
         /// <summary>
         /// Семейства категории
         /// </summary>
-        public ObservableCollection<ExtFamilyPair> FamilyPairs { get; }
+        public ReadOnlyObservableCollection<ExtFamilyPair> FamilyPairs { get; }
         
-        /// <summary>
-        /// Статус выбора в окне
-        /// </summary>
-        public bool? Checked
-        {
-            get => _checked;
-            set
-            {
-                if (Equals(value, _checked)) 
-                    return;
-                _checked = value;
-                if (value == null && FamilyPairs.All(s => s.SourceFamily.Checked != null && s.SourceFamily.Checked.Value))
-                    value = false;
-                OnPropertyChanged();
-                if (value != null)
-                    ChangeCheckedStateForFamilies(value.Value);
-            }
-        }
-
         /// <summary>
         /// Добавление пары семейств с подпиской на событие выбора
         /// </summary>
@@ -65,7 +41,18 @@
                 if (args.PropertyName == "Checked")
                     ChangeCheckedStateByFamilies();
             };
-            FamilyPairs.Add(extFamilyPair);
+            _familyPairs.Add(extFamilyPair);
+        }
+
+        private void OnPropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(Checked))
+            {
+                if (Checked == null && FamilyPairs.All(s => s.SourceFamily.Checked != null && s.SourceFamily.Checked.Value))
+                    Checked = false;
+                if (Checked != null)
+                    ChangeCheckedStateForFamilies(Checked.Value);
+            }
         }
 
         private void ChangeCheckedStateByFamilies()

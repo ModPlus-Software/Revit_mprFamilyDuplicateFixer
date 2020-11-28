@@ -7,6 +7,7 @@
     using Autodesk.Revit.DB;
     using Autodesk.Revit.UI;
     using Model;
+    using Model.FamiliesFix;
     using Visibility = System.Windows.Visibility;
 
     /// <summary>

@@ -1,20 +1,24 @@
-﻿namespace mprFamilyDuplicateFixer.Model
+﻿namespace mprFamilyDuplicateFixer.Model.Base
 {
     using System;
     using Autodesk.Revit.DB;
     using ModPlusAPI.Mvvm;
 
-    public class ExtFamilySymbol : VmBase
+    /// <summary>
+    /// Типоразмер семейства
+    /// </summary>
+    public abstract class BaseExtFamilySymbol : VmBase
     {
         private bool _checked;
-        private System.Windows.Visibility _checkStateVisibility = System.Windows.Visibility.Visible;
 
-        public ExtFamilySymbol(ExtFamily extFamily, FamilySymbol familySymbol)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BaseExtFamilySymbol"/> class.
+        /// </summary>
+        /// <param name="familySymbol">Origin family symbol</param>
+        protected BaseExtFamilySymbol(FamilySymbol familySymbol)
         {
-            ParentFamily = extFamily;
             FamilySymbol = familySymbol;
             Name = familySymbol.Name;
-            _checked = false;
         }
 
         /// <summary>
@@ -23,12 +27,7 @@
         public event EventHandler<bool> OnChecked;
 
         /// <summary>
-        /// Ссылка на родительское семейство
-        /// </summary>
-        public ExtFamily ParentFamily { get; }
-
-        /// <summary>
-        /// Revit's FamilySymbol
+        /// Revit FamilySymbol
         /// </summary>
         public FamilySymbol FamilySymbol { get; }
 
@@ -50,21 +49,6 @@
                 _checked = value;
                 OnPropertyChanged();
                 OnChecked?.Invoke(this, value);
-            }
-        }
-
-        /// <summary>
-        /// Видимость <see cref="Checked"/>
-        /// </summary>
-        public System.Windows.Visibility CheckStateVisibility
-        {
-            get => _checkStateVisibility;
-            set
-            {
-                if (_checkStateVisibility == value)
-                    return;
-                _checkStateVisibility = value;
-                OnPropertyChanged();
             }
         }
     }

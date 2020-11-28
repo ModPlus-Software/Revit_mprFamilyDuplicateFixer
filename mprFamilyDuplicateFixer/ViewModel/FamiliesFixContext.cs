@@ -6,21 +6,23 @@
     using System.Diagnostics;
     using System.Linq;
     using System.Windows.Input;
-    using System.Windows.Threading;
     using Autodesk.Revit.DB;
     using Autodesk.Revit.DB.Events;
     using Autodesk.Revit.UI;
     using Model;
+    using Model.FamiliesFix;
     using ModPlusAPI;
+    using ModPlusAPI.Enums;
     using ModPlusAPI.Mvvm;
+    using ModPlusAPI.Services;
     using ModPlusAPI.Windows;
     using ModPlusStyle.Controls.Dialogs;
     using View;
 
     /// <summary>
-    /// Главная модель представления
+    /// Контекст "Исправление дубликатов семейств"
     /// </summary>
-    public class MainViewModel : VmBase
+    public class FamiliesFixContext : BaseSubContext
     {
         private readonly string _langItem;
         private readonly MainWindow _mainWindow;
@@ -32,15 +34,14 @@
         private bool _copyFamilyInstanceParameters;
         private bool _deleteDuplicateFamilies;
         private bool _setFamilyInstanceSymbolFromSourceFamily;
-        private bool _isEnableControls = true;
-        private string _progressText;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="uiApplication">UIApplication</param>
+        /// <param name="uiApplication"><see cref="UIApplication"/></param>
         /// <param name="mainWindow">Ссылка на главное окно</param>
-        public MainViewModel(UIApplication uiApplication, MainWindow mainWindow)
+        public FamiliesFixContext(UIApplication uiApplication, MainWindow mainWindow)
+            : base(mainWindow)
         {
             _langItem = ModPlusConnector.Instance.Name;
             _uiApplication = uiApplication;
@@ -68,35 +69,7 @@
         /// Семейства по категориям
         /// </summary>
         public ObservableCollection<ExtCategory> FamiliesByCategories { get; }
-
-        /// <summary>
-        /// Доступность взаимодействия с элементами окна
-        /// </summary>
-        public bool IsEnableControls
-        {
-            get => _isEnableControls;
-            set
-            {
-                if (Equals(value, _isEnableControls))
-                    return;
-                _isEnableControls = value;
-                OnPropertyChanged();
-            }
-        }
-
-        /// <summary>
-        /// Progress text
-        /// </summary>
-        public string ProgressText
-        {
-            get => _progressText;
-            set
-            {
-                _progressText = value;
-                OnPropertyChanged();
-            }
-        }
-
+        
         /// <summary>
         /// Копировать типоразмеры
         /// </summary>
@@ -206,20 +179,16 @@
             }
         }
 
-        /// <summary>
-        /// Можно ли перейти к выполнению
-        /// </summary>
-        public bool CanExecute => CopyFamilySymbols || CopyFamilySymbolParameters || ChangeFamilyInstancesSymbol;
+        /// <inheritdoc/>
+        public override bool CanExecute => CopyFamilySymbols || CopyFamilySymbolParameters || ChangeFamilyInstancesSymbol;
 
         /// <summary>
         /// Команда добавления новой пары семейств
         /// </summary>
         public ICommand AddNewFamilyPairCommand => new RelayCommandWithoutParameter(AddNewFamilyPair);
 
-        /// <summary>
-        /// Выполнить
-        /// </summary>
-        public ICommand ExecuteCommand => new RelayCommandWithoutParameter(Execute);
+        /// <inheritdoc/>
+        public override ICommand ExecuteCommand => new RelayCommandWithoutParameter(Execute);
 
         #region Methods
 
@@ -358,7 +327,8 @@
         {
             if (checkedFamily.Name.StartsWith(currentFamily.Name))
             {
-                if (int.TryParse(checkedFamily.Name.Remove(0, currentFamily.Name.Length), out _))
+                ////if (int.TryParse(checkedFamily.Name.Remove(0, currentFamily.Name.Length), out _))
+                if (char.IsDigit(checkedFamily.Name.ToCharArray().LastOrDefault()))
                 {
                     var currentFamilySymbolId = currentFamily.GetFamilySymbolIds().FirstOrDefault();
                     var checkedFamilySymbolId = checkedFamily.GetFamilySymbolIds().FirstOrDefault();
@@ -390,37 +360,45 @@
 
                 IsEnableControls = false;
 
-                var trName = Language.GetFunctionLocalName(ModPlusConnector.Instance.Name, ModPlusConnector.Instance.LName);
+                var trName = Language.GetItem("h14");
                 if (string.IsNullOrEmpty(trName))
                     trName = "mprFamilyDuplicateFixer";
 
-                var errors = new List<string>();
+                var resultService = new ResultService();
 
                 using (var transactionGroup = new TransactionGroup(_uiApplication.ActiveUIDocument.Document, trName))
                 {
                     transactionGroup.Start();
 
                     if (CopyFamilySymbols)
-                        errors.AddRange(CopySymbols());
+                    {
+                        foreach (var error in CopySymbols()) 
+                            resultService.Add(error, null, ResultItemType.Error);
+                    }
 
                     if (CopyFamilySymbolParameters)
-                        errors.AddRange(CopySymbolsParameters());
+                    {
+                        foreach (var error in CopySymbolsParameters())
+                            resultService.Add(error, null, ResultItemType.Error);
+                    }
 
                     if (ChangeFamilyInstancesSymbol)
-                        errors.AddRange(ChangeInstances());
+                    {
+                        foreach (var error in ChangeInstances())
+                            resultService.Add(error, null, ResultItemType.Error);
+                    }
 
                     if (DeleteDuplicateFamilies)
-                        errors.AddRange(DeleteDuplicates());
+                    {
+                        foreach (var error in DeleteDuplicates())
+                            resultService.Add(error, null, ResultItemType.Error);
+                    }
 
                     transactionGroup.Assimilate();
                 }
 
-                if (errors.Any())
-                {
-                    ModPlusAPI.IO.String.ShowTextWithNotepad(string.Join(Environment.NewLine, errors), trName);
-                }
-
                 _mainWindow.Close();
+                resultService.ShowWithoutGrouping();
             }
             catch (Exception exception)
             {
@@ -808,9 +786,7 @@
                 {
                     foreach (var familySymbol in familyPair.DestinationFamily.FamilySymbols)
                     {
-                        familySymbol.CheckStateVisibility = isVisible 
-                            ? System.Windows.Visibility.Visible 
-                            : System.Windows.Visibility.Collapsed;
+                        familySymbol.IsVisibleCheckState = isVisible;
                     }
                 }
             }
@@ -824,22 +800,6 @@
                         .Select(s => s.Checked)))
                 .ToList();
             return checkedSymbols.Any(b => b);
-        }
-
-        private void SetProgressMessage(string msg)
-        {
-            var dispatcher = _mainWindow.Dispatcher;
-            if (dispatcher != null)
-            {
-                dispatcher.Invoke(DispatcherPriority.Background, new Action(() =>
-                {
-                    ProgressText = msg;
-                }));
-            }
-            else
-            {
-                ProgressText = msg;
-            }
         }
 
         #endregion
@@ -862,92 +822,6 @@
                 source = FamilySource.Family;
                 overwriteParameterValues = true;
                 return true;
-            }
-        }
-
-        /// <summary>
-        /// Вспомогательный объект хранения значений параметров
-        /// </summary>
-        internal class ParameterDataHolder
-        {
-            public ParameterDataHolder(Parameter parameter)
-            {
-                Name = parameter.Definition.Name;
-                StorageType = parameter.StorageType;
-                switch (StorageType)
-                {
-                    case StorageType.Double:
-                        DoubleValue = parameter.AsDouble();
-                        break;
-                    case StorageType.Integer:
-                        IntegerValue = parameter.AsInteger();
-                        break;
-                    case StorageType.String:
-                        StringValue = parameter.AsString() ?? string.Empty;
-                        break;
-                    case StorageType.ElementId:
-                        ElementIdValue = parameter.AsElementId();
-                        break;
-                }
-            }
-
-            public string Name { get; }
-
-            public StorageType StorageType { get; }
-
-            public double DoubleValue { get; }
-
-            public int IntegerValue { get; }
-
-            public string StringValue { get; }
-
-            public ElementId ElementIdValue { get; }
-
-            /// <summary>
-            /// Является ли параметр допустимым для обработки копирования
-            /// </summary>
-            /// <param name="parameter">Проверяемый параметр</param>
-            public static bool IsAllowableParameter(Parameter parameter)
-            {
-                if (parameter.IsReadOnly ||
-                    parameter.StorageType == StorageType.None)
-                    return false;
-                if (parameter.Definition is InternalDefinition internalDefinition)
-                {
-                    if (internalDefinition.BuiltInParameter == BuiltInParameter.ELEM_TYPE_PARAM ||
-                        internalDefinition.BuiltInParameter == BuiltInParameter.ELEM_FAMILY_PARAM ||
-                        internalDefinition.BuiltInParameter == BuiltInParameter.ELEM_FAMILY_AND_TYPE_PARAM)
-                        return false;
-                }
-
-                return true;
-            }
-
-            public void SetTo(Parameter parameter)
-            {
-                switch (StorageType)
-                {
-                    case StorageType.Double:
-                        if (Math.Abs(parameter.AsDouble() - DoubleValue) < 0.0001)
-                            return;
-                        parameter.Set(DoubleValue);
-                        break;
-                    case StorageType.Integer:
-                        if (parameter.AsInteger() == IntegerValue)
-                            return;
-                        parameter.Set(IntegerValue);
-                        break;
-                    case StorageType.String:
-                        if (parameter.AsString() == StringValue)
-                            return;
-                        parameter.Set(StringValue);
-                        break;
-                    case StorageType.ElementId:
-                        if (parameter.AsElementId() == ElementIdValue)
-                            return;
-                        parameter.Set(ElementIdValue);
-                        break;
-                }
             }
         }
     }
